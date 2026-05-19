@@ -67,7 +67,51 @@ client.on("disconnected", (reason) => {
 // =====================================
 // INITIALIZE
 // =====================================
-client.initialize();
+//client.initialize();
+
+// =====================================
+// INITIALIZE
+// =====================================
+
+const PHONE_NUMBER = "5521xxxx";
+
+(async () => {
+  try {
+    await client.initialize();
+
+    setTimeout(async () => {
+      try {
+        const pairingCode =
+          await client.requestPairingCode(
+            PHONE_NUMBER
+          );
+
+        console.log(
+          "\n📱 PAIRING CODE:"
+        );
+
+        console.log(pairingCode);
+
+        console.log(
+          "\nUse no WhatsApp:"
+        );
+
+        console.log(
+          "Configurações > Dispositivos conectados > Conectar dispositivo"
+        );
+      } catch (err) {
+        console.log(
+          "⚠️ Pairing already connected or unavailable."
+        );
+      }
+    }, 10000);
+  } catch (err) {
+    console.log(
+      "❌ Pairing Error:",
+      err
+    );
+  }
+})();
 
 // =====================================
 // UTILS
