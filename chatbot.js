@@ -529,7 +529,7 @@ client.on(
 // MESSAGES
 // =====================================
 client.on(
-  "message_create",
+  "message",
   async (msg) => {
     try {
       if (!msg.from) return;
