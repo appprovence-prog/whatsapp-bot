@@ -423,7 +423,7 @@ client.on("vote_update", async (vote) => {
 // =====================================
 // MESSAGES
 // =====================================
-client.on("message", async (msg) => {
+client.on("message_create", async (msg) => {
   try {
     if (!msg.from) return;
 
@@ -434,15 +434,14 @@ client.on("message", async (msg) => {
 
     if (msg.from.endsWith("@g.us")) return;
 
-    const now = Math.floor(Date.now() / 1000);
-
-    if (now - msg.timestamp > 15) return;
+    
 
     const chat = await msg.getChat();
 
     const number = normalizeNumber(msg.from);
 
     const text = msg.body?.trim() || "";
+    console.log("📩 MESSAGE:", text);
 
     if (!text) return;
 
