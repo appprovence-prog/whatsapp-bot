@@ -39,11 +39,11 @@ const client = new Client({
 // =====================================
 // QR CODE
 // =====================================
-client.on("qr", (qr) => {
-  qrcode.generate(qr, {
-    small: true,
-  });
-});
+// client.on("qr", (qr) => {
+//   qrcode.generate(qr, {
+//     small: true,
+//   });
+// });
 
 // =====================================
 // READY
