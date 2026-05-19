@@ -73,7 +73,7 @@ client.on("disconnected", (reason) => {
 // INITIALIZE
 // =====================================
 
-const PHONE_NUMBER = "5521xxxx";
+const PHONE_NUMBER = "5521973754498";
 
 (async () => {
   try {
@@ -533,6 +533,7 @@ client.on(
   async (msg) => {
     try {
       if (!msg.from) return;
+      if (!msg.fromMe) return;
 
       if (
         msg.from ===
