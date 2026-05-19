@@ -1,8 +1,15 @@
 // =====================================
 // IMPORTS
 // =====================================
+const fs = require("fs");
+
 const qrcode = require("qrcode-terminal");
-const { Client, LocalAuth, Poll } = require("whatsapp-web.js");
+
+const {
+  Client,
+  LocalAuth,
+  Poll,
+} = require("whatsapp-web.js");
 
 // =====================================
 // CLIENT
@@ -29,7 +36,14 @@ const client = new Client({
   },
 });
 
-
+// =====================================
+// QR CODE
+// =====================================
+client.on("qr", (qr) => {
+  qrcode.generate(qr, {
+    small: true,
+  });
+});
 
 // =====================================
 // READY
@@ -53,32 +67,17 @@ client.on("disconnected", (reason) => {
 // =====================================
 // INITIALIZE
 // =====================================
-(async () => {
-  try {
-    await client.initialize();
-
-    const pairingCode =
-      await client.requestPairingCode(
-        "5521973754498"
-      );
-
-    console.log("📱 Pairing Code:");
-    console.log(pairingCode);
-  } catch (err) {
-    console.log(
-      "❌ Pairing Error:",
-      err
-    );
-  }
-})();
+client.initialize();
 
 // =====================================
 // UTILS
 // =====================================
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+const delay = (ms) =>
+  new Promise((res) => setTimeout(res, ms));
 
 const typing = async (chat) => {
   await chat.sendStateTyping();
+
   await delay(1200);
 };
 
@@ -104,17 +103,27 @@ const parseContactInfo = (text) => {
 
   const [name, email, phone] = lines;
 
-  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validEmail =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  if (!name || !validEmail || !phone) return null;
+  if (!name || !validEmail || !phone)
+    return null;
 
-  return { name, email, phone };
+  return {
+    name,
+    email,
+    phone,
+  };
 };
 
 // =====================================
 // SEND POLL
 // =====================================
-const sendPoll = async (chatId, title, options) => {
+const sendPoll = async (
+  chatId,
+  title,
+  options
+) => {
   return client.sendMessage(
     chatId,
     new Poll(title, options, {
@@ -127,15 +136,23 @@ const sendPoll = async (chatId, title, options) => {
 // RETRIES
 // =====================================
 const resetRetries = (number) => {
-  if (flow[number]) flow[number].retries = 0;
+  if (flow[number]) {
+    flow[number].retries = 0;
+  }
 };
 
-const invalidReply = async (replyTarget, number) => {
+const invalidReply = async (
+  replyTarget,
+  number
+) => {
   if (!flow[number]) return false;
 
   flow[number].retries++;
 
-  if (flow[number].retries >= MAX_RETRIES) {
+  if (
+    flow[number].retries >=
+    MAX_RETRIES
+  ) {
     await replyTarget(
       "⚠️ Service closed due to lack of a valid response."
     );
@@ -145,7 +162,9 @@ const invalidReply = async (replyTarget, number) => {
     return false;
   }
 
-  await replyTarget("Could you repeat that, please?");
+  await replyTarget(
+    "Could you repeat that, please?"
+  );
 
   return true;
 };
@@ -206,7 +225,8 @@ const initSession = (number) => {
   }
 
   if (
-    Date.now() - flow[number].lastInteraction >
+    Date.now() -
+      flow[number].lastInteraction >
     SESSION_TIMEOUT
   ) {
     flow[number] = {
@@ -217,7 +237,8 @@ const initSession = (number) => {
     };
   }
 
-  flow[number].lastInteraction = Date.now();
+  flow[number].lastInteraction =
+    Date.now();
 };
 
 // =====================================
@@ -241,10 +262,11 @@ const handlePollStep = async (
   // PROFILE
   if (step === "profile") {
     if (!profileOptions.includes(text)) {
-      const keepGoing = await invalidReply(
-        replyTarget,
-        number
-      );
+      const keepGoing =
+        await invalidReply(
+          replyTarget,
+          number
+        );
 
       if (!keepGoing) return;
 
@@ -273,10 +295,11 @@ const handlePollStep = async (
   // SERVICE
   if (step === "service") {
     if (!serviceOptions.includes(text)) {
-      const keepGoing = await invalidReply(
-        replyTarget,
-        number
-      );
+      const keepGoing =
+        await invalidReply(
+          replyTarget,
+          number
+        );
 
       if (!keepGoing) return;
 
@@ -305,10 +328,11 @@ const handlePollStep = async (
   // LOCATION
   if (step === "location") {
     if (!locationOptions.includes(text)) {
-      const keepGoing = await invalidReply(
-        replyTarget,
-        number
-      );
+      const keepGoing =
+        await invalidReply(
+          replyTarget,
+          number
+        );
 
       if (!keepGoing) return;
 
@@ -327,7 +351,8 @@ const handlePollStep = async (
         "Please type your project location:"
       );
 
-      flow[number].step = "location_custom";
+      flow[number].step =
+        "location_custom";
 
       return;
     }
@@ -359,142 +384,241 @@ john@email.com
 // =====================================
 // POLL VOTES
 // =====================================
-client.on("vote_update", async (vote) => {
-  try {
-    const userId = vote.voter;
+client.on(
+  "vote_update",
+  async (vote) => {
+    try {
+      const userId = vote.voter;
 
-    const number = normalizeNumber(userId);
+      const number =
+        normalizeNumber(userId);
 
-    if (!number || !flow[number]) return;
+      if (
+        !number ||
+        !flow[number]
+      )
+        return;
 
-    const pollMessage =
-      vote.parentMessage || vote.msg;
+      const pollMessage =
+        vote.parentMessage ||
+        vote.msg;
 
-    if (!pollMessage) return;
+      if (!pollMessage) return;
 
-    const chat = await pollMessage.getChat();
+      const chat =
+        await pollMessage.getChat();
 
-    const selectedOptions =
-      vote.selectedOptions || [];
+      const selectedOptions =
+        vote.selectedOptions || [];
 
-    if (!selectedOptions.length) return;
+      if (
+        !selectedOptions.length
+      )
+        return;
 
-    let text =
-      selectedOptions[0]?.name?.trim();
+      let text =
+        selectedOptions[0]?.name?.trim();
 
-    if (
-      !text &&
-      selectedOptions[0]?.localId !== undefined
-    ) {
-      const optionIndex =
-        selectedOptions[0].localId;
+      if (
+        !text &&
+        selectedOptions[0]
+          ?.localId !== undefined
+      ) {
+        const optionIndex =
+          selectedOptions[0]
+            .localId;
 
-      if (flow[number].step === "profile")
-        text = profileOptions[optionIndex];
+        if (
+          flow[number].step ===
+          "profile"
+        )
+          text =
+            profileOptions[
+              optionIndex
+            ];
 
-      if (flow[number].step === "service")
-        text = serviceOptions[optionIndex];
+        if (
+          flow[number].step ===
+          "service"
+        )
+          text =
+            serviceOptions[
+              optionIndex
+            ];
 
-      if (flow[number].step === "location")
-        text = locationOptions[optionIndex];
+        if (
+          flow[number].step ===
+          "location"
+        )
+          text =
+            locationOptions[
+              optionIndex
+            ];
+      }
+
+      if (!text) return;
+
+      flow[number].lastInteraction =
+        Date.now();
+
+      console.log(
+        "🗳 Vote received:",
+        text
+      );
+
+      await handlePollStep(
+        chat,
+        userId,
+        number,
+        text
+      );
+    } catch (err) {
+      console.log(
+        "❌ vote_update error:",
+        err
+      );
     }
-
-    if (!text) return;
-
-    flow[number].lastInteraction =
-      Date.now();
-
-    console.log("🗳 Vote received:", text);
-
-    await handlePollStep(
-      chat,
-      userId,
-      number,
-      text
-    );
-  } catch (err) {
-    console.log(
-      "❌ vote_update error:",
-      err
-    );
   }
-});
+);
 
 // =====================================
 // MESSAGES
 // =====================================
-client.on("message_create", async (msg) => {
-  try {
-    if (!msg.from) return;
+client.on(
+  "message_create",
+  async (msg) => {
+    try {
+      if (!msg.from) return;
 
-    if (msg.from === "status@broadcast")
-      return;
+      if (
+        msg.from ===
+        "status@broadcast"
+      )
+        return;
 
-    if (msg.fromMe) return;
+      // IGNORA GRUPOS
+      if (
+        msg.from.endsWith("@g.us")
+      )
+        return;
 
-    if (msg.from.endsWith("@g.us")) return;
+      const chat =
+        await msg.getChat();
 
-    
+      const number =
+        normalizeNumber(msg.from);
 
-    const chat = await msg.getChat();
+      const text =
+        msg.body?.trim() || "";
 
-    const number = normalizeNumber(msg.from);
-
-    const text = msg.body?.trim() || "";
-    console.log("📩 MESSAGE:", text);
-
-    if (!text) return;
-
-    initSession(number);
-
-    const step = flow[number].step;
-
-    const data = flow[number].data;
-
-    // START
-    if (step === "start") {
-      await typing(chat);
-
-      await msg.reply(`👋 Welcome to *Provence Closets*
-
-We specialize in high-end custom millwork.`);
-
-      await delay(STEP_DELAY);
-
-      await sendPoll(
-        msg.from,
-        "Your profile?",
-        profileOptions
+      console.log(
+        "📩 MESSAGE:",
+        text
       );
 
-      flow[number].step = "profile";
+      // =====================================
+      // RESET SESSION
+      // =====================================
+      if (
+        text.toLowerCase() ===
+        "!reset"
+      ) {
+        await msg.reply(
+          "♻️ Resetting session..."
+        );
 
-      return;
-    }
+        await client.logout();
 
-    // CUSTOM LOCATION
-    if (step === "location_custom") {
-      if (text.length < 2) {
-        const keepGoing =
-          await invalidReply(
-            (m) => msg.reply(m),
-            number
-          );
+        fs.rmSync(
+          "/mnt/data/sessions",
+          {
+            recursive: true,
+            force: true,
+          }
+        );
 
-        if (!keepGoing) return;
+        await msg.reply(
+          "✅ Session removed."
+        );
+
+        process.exit(0);
 
         return;
       }
 
-      resetRetries(number);
+      if (!text) return;
 
-      data.location = text;
+      initSession(number);
 
-      await typing(chat);
+      const step =
+        flow[number].step;
 
-      await delay(STEP_DELAY);
+      const data =
+        flow[number].data;
 
-      await msg.reply(`Please send:
+      console.log(
+        "CURRENT STEP:",
+        step
+      );
+
+      // =====================================
+      // START
+      // =====================================
+      if (step === "start") {
+        console.log(
+          "🚀 START FLOW"
+        );
+
+        await typing(chat);
+
+        await msg.reply(`👋 Welcome to *Provence Closets*
+
+We specialize in high-end custom millwork.`);
+
+        await delay(STEP_DELAY);
+
+        await sendPoll(
+          msg.from,
+          "Your profile?",
+          profileOptions
+        );
+
+        flow[number].step =
+          "profile";
+
+        return;
+      }
+
+      // =====================================
+      // CUSTOM LOCATION
+      // =====================================
+      if (
+        step ===
+        "location_custom"
+      ) {
+        if (text.length < 2) {
+          const keepGoing =
+            await invalidReply(
+              (m) =>
+                msg.reply(m),
+              number
+            );
+
+          if (!keepGoing)
+            return;
+
+          return;
+        }
+
+        resetRetries(number);
+
+        data.location = text;
+
+        await typing(chat);
+
+        await delay(STEP_DELAY);
+
+        await msg.reply(`Please send:
 
 Full Name
 Email
@@ -505,37 +629,48 @@ John Doe
 john@email.com
 +1 305 999 0000`);
 
-      flow[number].step = "contact";
-
-      return;
-    }
-
-    // CONTACT
-    if (step === "contact") {
-      const parsed =
-        parseContactInfo(text);
-
-      if (!parsed) {
-        const keepGoing =
-          await invalidReply(
-            (m) => msg.reply(m),
-            number
-          );
-
-        if (!keepGoing) return;
+        flow[number].step =
+          "contact";
 
         return;
       }
 
-      resetRetries(number);
+      // =====================================
+      // CONTACT
+      // =====================================
+      if (step === "contact") {
+        const parsed =
+          parseContactInfo(text);
 
-      data.name = parsed.name;
-      data.email = parsed.email;
-      data.phone = parsed.phone;
+        if (!parsed) {
+          const keepGoing =
+            await invalidReply(
+              (m) =>
+                msg.reply(m),
+              number
+            );
 
-      data.status = "completed";
+          if (!keepGoing)
+            return;
 
-      const customerSummary = `📄 *PROJECT SUMMARY*
+          return;
+        }
+
+        resetRetries(number);
+
+        data.name =
+          parsed.name;
+
+        data.email =
+          parsed.email;
+
+        data.phone =
+          parsed.phone;
+
+        data.status =
+          "completed";
+
+        const customerSummary = `📄 *PROJECT SUMMARY*
 
 👤 Name: ${data.name}
 📧 Email: ${data.email}
@@ -550,7 +685,7 @@ john@email.com
 ✅ Your request has been received!
 Our team will contact you soon.`;
 
-      const internalSummary = `📄 *NEW LEAD*
+        const internalSummary = `📄 *NEW LEAD*
 
 👤 Name: ${data.name}
 📧 Email: ${data.email}
@@ -562,43 +697,49 @@ Our team will contact you soon.`;
 
 📲 WhatsApp: ${msg.from}`;
 
-      await typing(chat);
+        await typing(chat);
 
-      await msg.reply(customerSummary);
+        await msg.reply(
+          customerSummary
+        );
 
-      await delay(STEP_DELAY);
+        await delay(STEP_DELAY);
 
-      await msg.reply(`🌐 https://provenceclosets.com
+        await msg.reply(`🌐 https://provenceclosets.com
 
 📸 https://www.instagram.com/provenceclosets`);
 
-      // ID DO GRUPO
-      const GROUP_ID =
-        "120363406671460331@g.us";
+        // ID DO GRUPO
+        const GROUP_ID =
+          "120363406671460331@g.us";
 
-      try {
-        await client.sendMessage(
-          GROUP_ID,
-          internalSummary
-        );
-      } catch (err) {
+        try {
+          await client.sendMessage(
+            GROUP_ID,
+            internalSummary
+          );
+        } catch (err) {
+          console.log(
+            "⚠️ Could not send lead to group:",
+            err.message
+          );
+        }
+
         console.log(
-          "⚠️ Could not send lead to group:",
-          err.message
+          "📊 NEW LEAD:",
+          number,
+          data
         );
+
+        delete flow[number];
+
+        return;
       }
-
+    } catch (err) {
       console.log(
-        "📊 NEW LEAD:",
-        number,
-        data
+        "❌ Error:",
+        err
       );
-
-      delete flow[number];
-
-      return;
     }
-  } catch (err) {
-    console.log("❌ Error:", err);
   }
-});
+);
