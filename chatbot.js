@@ -32,9 +32,9 @@ const client = new Client({
 // =====================================
 // QR CODE
 // =====================================
-client.on("qr", (qr) => {
-  console.log("📲 Scan the QR Code below:\n");
-  qrcode.generate(qr, { small: true });
+client.on("code", (code) => {
+  console.log("📱 Pairing Code:");
+  console.log(code);
 });
 
 // =====================================
