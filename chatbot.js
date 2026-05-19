@@ -29,13 +29,7 @@ const client = new Client({
   },
 });
 
-// =====================================
-// QR CODE
-// =====================================
-client.on("code", (code) => {
-  console.log("📱 Pairing Code:");
-  console.log(code);
-});
+
 
 // =====================================
 // READY
@@ -59,7 +53,24 @@ client.on("disconnected", (reason) => {
 // =====================================
 // INITIALIZE
 // =====================================
-client.initialize();
+(async () => {
+  try {
+    await client.initialize();
+
+    const pairingCode =
+      await client.requestPairingCode(
+        "5521973754498"
+      );
+
+    console.log("📱 Pairing Code:");
+    console.log(pairingCode);
+  } catch (err) {
+    console.log(
+      "❌ Pairing Error:",
+      err
+    );
+  }
+})();
 
 // =====================================
 // UTILS
